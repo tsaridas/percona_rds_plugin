@@ -17,9 +17,9 @@ import pprint
 import sys
 
 
-def get_rds_info(indentifier=None):
+def get_rds_info(region, indentifier=None):
     """Function for fetching RDS details"""
-    rds = boto.rds.connect_to_region('us-west-1')
+    rds = boto.rds.connect_to_region(region)
     try:
         if indentifier:
             info = rds.get_all_dbinstances(indentifier)[0]
@@ -29,9 +29,9 @@ def get_rds_info(indentifier=None):
         info = None
     return info
 
-def get_rds_stats(step, start_time, end_time, metric, indentifier):
+def get_rds_stats(step, start_time, end_time, metric, indentifier, region):
     """Function for fetching RDS statistics from CloudWatch"""
-    cw = boto.ec2.cloudwatch.connect_to_region('us-west-1')
+    cw = boto.ec2.cloudwatch.connect_to_region(region)
     result = cw.get_metric_statistics(step,
         start_time,
         end_time,
@@ -91,13 +91,14 @@ def main():
     parser.add_option('-c', '--crit', help='critical threshold')
     parser.add_option('-u', '--unit', help='unit of thresholds for "storage" and "memory" metrics: [%s]. Default: percent' % ', '.join(units),
                       default='percent')
+    parser.add_option('-r', '--region', help='AWS region.', default="us-east-1")
     options, args = parser.parse_args()
     # Check args
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit()
     elif options.db_list:
-        info = get_rds_info()
+        info = get_rds_info(options.region)
         print 'List of all DB instances:'
         pprint.pprint(info)
         sys.exit()
@@ -105,7 +106,7 @@ def main():
         parser.print_help()
         parser.error('DB identifier is not set.')
     elif options.info:
-        info = get_rds_info(options.ident)
+        info = get_rds_info(options.region, options.ident)
         if info:
             pprint.pprint(vars(info))
         else:
@@ -128,7 +129,7 @@ def main():
 
     # RDS Status
     if options.metric == 'status':
-        info = get_rds_info(options.ident)
+        info = get_rds_info(options.region, options.ident)
         if not info:
             status = UNKNOWN
             note = 'Unable to get RDS instance'
@@ -164,7 +165,7 @@ def main():
             else:
                 n = i
             load = get_rds_stats(i * 60, tm - datetime.timedelta(seconds=n * 60), tm,
-                                 metrics[options.metric], options.ident)
+                                 metrics[options.metric], options.ident, options.region)
             if not load:
                 status = UNKNOWN
                 note = 'Unable to get RDS statistics'
@@ -205,9 +206,9 @@ def main():
             parser.print_help()
             parser.error('Unit is not valid.')
 
-        info = get_rds_info(options.ident)
+        info = get_rds_info(options.region, options.ident)
         free = get_rds_stats(60, tm - datetime.timedelta(seconds=60), tm,
-                             metrics[options.metric], options.ident)
+                             metrics[options.metric], options.ident, options.region)
         if not info or not free:
             status = UNKNOWN
             note = 'Unable to get RDS details and statistics'
