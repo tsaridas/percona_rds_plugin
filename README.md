@@ -25,6 +25,8 @@ pmp-check-aws-rds.py - Check Amazon RDS metrics.
     -c CRIT, --crit=CRIT  critical threshold
     -u UNIT, --unit=UNIT  unit of thresholds for "storage" and "memory" metrics:
                           [percent, GB]. Default: percent
+    -r REGION, --region=REGION 
+                          AWS region.
 ```
 REQUIREMENTS 
 This plugin is written on Python and utilizes the module C<boto> (Python interface
@@ -57,7 +59,7 @@ The plugin provides 4 checks and some options to list and print RDS details:
 * RDS Free Memory
 To get the list of all RDS instances under AWS account:
 ```
-  # ./aws-rds-nagios-check.py -l
+  # ./aws-rds-nagios-check.py -l -r us-west-1
 ```
 To get the detailed status of RDS instance identified as C<blackbox>: 
 ```
